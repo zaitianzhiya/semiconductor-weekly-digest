@@ -1,0 +1,47 @@
+# ── Semiconductor Weekly Digest — 质量评分配置 ──
+
+# 可信度评分权重（跨生态独立源交叉验证）
+scoring:
+  tier_1_weight: 40      # Tier 1 源每个 40 分
+  tier_2_weight: 25      # Tier 2 源每个 25 分
+  max_score: 100         # 封顶
+  min_score_for_A: 80    # A 级 = 交叉验证 3+ 独立源
+  min_score_for_B: 60    # B 级 = 2 独立源
+  min_score_for_C: 30    # C 级 = 单一源确认
+                          # D 级 = 30 以下 / 仅骨架关键词
+
+# 生态系统独立权重（用于交叉验证）
+ecosystem_weights:
+  intl_trade: 1.0        # 国际行业媒体 (EE Times, Semi Digest, SemiEngineering)
+  research: 0.9          # 学术研究 (IEEE Spectrum)
+  consumer: 0.7          # 消费者媒体 (AnandTech, Tom's Hardware)
+  market_data: 1.0       # 市场数据 (TrendForce, TechInsights, Yole)
+  supply_chain: 1.0      # 供应链 (DIGITIMES)
+  asia_pacific: 0.9      # 亚太地区 (Nikkei Asia, 日经中文网)
+  korea_semi: 0.9        # 韩国半导体 (Korea Herald/Times)
+  global_finance: 0.8    # 全球金融 (Reuters/Bloomberg)
+  cn_media: 0.9          # 中国媒体 (半导体行业观察, 集微网, 芯思想, 问芯Voice)
+  industry_body: 1.0     # 行业协会 (SEMI, SIA)
+  memory: 0.8            # 存储专题 (DRAMeXchange, Blocks & Files)
+  insider: 0.6           # 内幕/传闻 (SemiAccurate)
+  ai_chip: 0.9           # AI 芯片 (The Next Platform, ServeTheHome, HPCwire)
+  packaging: 0.8         # 先进封装 (Chiplet Summit, 3D Incites)
+  cn_aggregator: 0.8     # 中文聚合器 (芯智讯, EEWorld, 第三代半导体)
+  compound_semi: 0.8     # 化合物半导体 (Semiconductor Today)
+  eda_ip: 0.8            # EDA/IP (RISC-V International)
+  technical: 0.9          # 技术深度分析 (WikiChip)
+
+# 5 维度评分权重
+dimension_weights:
+  tech_significance: 30       # 技术突破性
+  market_impact: 25           # 市场影响力
+  supply_chain_criticality: 20 # 供应链关键度
+  geopolitical_weight: 15     # 地缘政治权重
+  industry_novelty: 10        # 行业新颖度
+
+# 质量过滤阈值
+filter:
+  min_title_length: 10     # 标题最短
+  min_desc_length: 30      # 描述最短
+  require_citation: true   # 必须有关联源
+  max_age_days: 14         # 最多 14 天前

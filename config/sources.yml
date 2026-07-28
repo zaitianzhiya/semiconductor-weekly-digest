@@ -1,0 +1,262 @@
+# ── Semiconductor Weekly Digest — 信息来源配置 (32 sources × 8生态) ──
+# 分层：Tier 1 = DDG 真实搜索, Tier 2 = 关键词骨架
+# 类型: web_search = DDG 新闻
+
+sources:
+  # ═══ Tier 1 — 一手信息源 (DDG 真实搜索, 18 sources) ═══
+  eetimes:
+    name: "EE Times"
+    tier: 1
+    ecosystem: intl_trade
+    type: web_search
+    keywords: ["EE Times semiconductor", "chip design EDA", "semiconductor manufacturing"]
+    max_items: 3
+
+  semi_digest:
+    name: "Semiconductor Digest"
+    tier: 1
+    ecosystem: intl_trade
+    type: web_search
+    keywords: ["Semiconductor Digest", "chip manufacturing", "semiconductor equipment material"]
+    max_items: 3
+
+  ieee_spectrum:
+    name: "IEEE Spectrum"
+    tier: 1
+    ecosystem: research
+    type: web_search
+    keywords: ["IEEE Spectrum semiconductor", "chip technology breakthrough", "semiconductor research"]
+    max_items: 3
+
+  anandtech:
+    name: "AnandTech / Tom's Hardware"
+    tier: 1
+    ecosystem: consumer
+    type: web_search
+    keywords: ["AnandTech CPU GPU", "chip process node", "semiconductor architecture review"]
+    max_items: 3
+
+  trendforce:
+    name: "TrendForce"
+    tier: 1
+    ecosystem: market_data
+    type: web_search
+    keywords: ["TrendForce semiconductor", "DRAM price", "foundry capacity report"]
+    max_items: 3
+
+  techinsights:
+    name: "TechInsights"
+    tier: 1
+    ecosystem: market_data
+    type: web_search
+    keywords: ["TechInsights semiconductor", "chip market forecast", "process node analysis"]
+    max_items: 3
+
+  digitimes:
+    name: "DIGITIMES"
+    tier: 1
+    ecosystem: supply_chain
+    type: web_search
+    keywords: ["DIGITIMES semiconductor", "TSMC supply chain", "Taiwan chip industry"]
+    max_items: 3
+
+  nikkei_semi:
+    name: "Nikkei Asia Semiconductors"
+    tier: 1
+    ecosystem: asia_pacific
+    type: web_search
+    keywords: ["Nikkei Asia semiconductor", "Japan chip equipment", "Asia semiconductor news"]
+    max_items: 3
+
+  korea_semi:
+    name: "Korea Herald/Times Tech"
+    tier: 1
+    ecosystem: korea_semi
+    type: web_search
+    keywords: ["Samsung semiconductor", "SK Hynix DRAM", "Korea chip industry"]
+    max_items: 3
+
+  reuters_bloomberg:
+    name: "Reuters/Bloomberg Tech"
+    tier: 1
+    ecosystem: global_finance
+    type: web_search
+    keywords: ["semiconductor market cap", "chip Capex investment", "foundry revenue"]
+    max_items: 3
+
+  semiinsights:
+    name: "半导体行业观察"
+    tier: 1
+    ecosystem: cn_media
+    type: web_search
+    keywords: ["半导体行业观察", "芯片 产业分析", "半导体 技术突破"]
+    max_items: 3
+
+  jiwei:
+    name: "集微网"
+    tier: 1
+    ecosystem: cn_media
+    type: web_search
+    keywords: ["集微网 半导体", "中国芯片 产业链", "半导体 IPO"]
+    max_items: 3
+
+  chipinsight:
+    name: "芯思想"
+    tier: 1
+    ecosystem: cn_media
+    type: web_search
+    keywords: ["芯思想 芯片", "中国半导体 制造", "芯片 封测 设计"]
+    max_items: 3
+
+  semivoice:
+    name: "问芯Voice"
+    tier: 1
+    ecosystem: cn_media
+    type: web_search
+    keywords: ["问芯Voice 半导体", "芯片 政策", "半导体 企业 动态"]
+    max_items: 3
+
+  nikkei_cn_semi:
+    name: "日经中文网 半导体"
+    tier: 1
+    ecosystem: asia_pacific
+    type: web_search
+    keywords: ["日经 半导体", "日本 芯片 设备", "车用芯片 半导体"]
+    max_items: 3
+
+  semi_org:
+    name: "SEMI"
+    tier: 1
+    ecosystem: industry_body
+    type: web_search
+    keywords: ["SEMI semiconductor", "chip fab investment", "semiconductor equipment billings"]
+    max_items: 3
+
+  sia_news:
+    name: "SIA Semiconductor Industry Association"
+    tier: 1
+    ecosystem: industry_body
+    type: web_search
+    keywords: ["Semiconductor Industry Association", "SIA chip policy", "chip market report"]
+    max_items: 3
+
+  semiengineering:
+    name: "SemiEngineering"
+    tier: 1
+    ecosystem: intl_trade
+    type: web_search
+    keywords: ["SemiEngineering chip design", "advanced packaging technology", "semiconductor process"]
+    max_items: 3
+
+  # ═══ Tier 2 — 二手聚合/垂直源 (关键词骨架, 14 sources) ═══
+  dramexchange:
+    name: "DRAMeXchange"
+    tier: 2
+    ecosystem: memory
+    type: web_search
+    keywords: ["DRAM price trend", "NAND Flash market", "HBM supply demand"]
+    max_items: 3
+
+  blocksandfiles:
+    name: "Blocks & Files"
+    tier: 2
+    ecosystem: memory
+    type: web_search
+    keywords: ["enterprise SSD", "NAND flash storage", "HBM memory chip"]
+    max_items: 3
+
+  semiaccurate:
+    name: "SemiAccurate"
+    tier: 2
+    ecosystem: insider
+    type: web_search
+    keywords: ["SemiAccurate chip rumor", "semiconductor insider", "Intel TSMC foundry"]
+    max_items: 3
+
+  nextplatform:
+    name: "The Next Platform"
+    tier: 2
+    ecosystem: ai_chip
+    type: web_search
+    keywords: ["AI chip GPU accelerator", "NVIDIA datacenter", "AI inference processor"]
+    max_items: 3
+
+  servethehome:
+    name: "ServeTheHome"
+    tier: 2
+    ecosystem: ai_chip
+    type: web_search
+    keywords: ["server chip DPU NPU", "data center silicon", "AI accelerator card"]
+    max_items: 3
+
+  hpcwire:
+    name: "HPCwire"
+    tier: 2
+    ecosystem: ai_chip
+    type: web_search
+    keywords: ["HPC chip", "supercomputer processor", "quantum computing chip"]
+    max_items: 3
+
+  chiplet_news:
+    name: "Chiplet / 3D Incites"
+    tier: 2
+    ecosystem: packaging
+    type: web_search
+    keywords: ["chiplet advanced packaging", "3D IC hybrid bonding", "UCIe interconnect"]
+    max_items: 3
+
+  yole_group:
+    name: "Yole Group"
+    tier: 2
+    ecosystem: market_data
+    type: web_search
+    keywords: ["Yole semiconductor market", "power semiconductor GaN SiC", "advanced packaging report"]
+    max_items: 3
+
+  icsmart:
+    name: "芯智讯"
+    tier: 2
+    ecosystem: cn_aggregator
+    type: web_search
+    keywords: ["芯智讯 芯片", "中国半导体 快讯", "芯片 产业链"]
+    max_items: 3
+
+  compound_semi:
+    name: "第三代半导体产业观察"
+    tier: 2
+    ecosystem: cn_aggregator
+    type: web_search
+    keywords: ["GaN 氮化镓", "SiC 碳化硅", "第三代半导体 功率器件"]
+    max_items: 3
+
+  eeworld:
+    name: "电子工程世界"
+    tier: 2
+    ecosystem: cn_aggregator
+    type: web_search
+    keywords: ["电子工程 芯片应用", "半导体 电路设计", "MCU FPGA 芯片"]
+    max_items: 3
+
+  semi_today:
+    name: "Semiconductor Today"
+    tier: 2
+    ecosystem: compound_semi
+    type: web_search
+    keywords: ["compound semiconductor GaN", "SiC power device", "GaAs RF chip"]
+    max_items: 3
+
+  riscv_news:
+    name: "RISC-V International"
+    tier: 2
+    ecosystem: eda_ip
+    type: web_search
+    keywords: ["RISC-V processor", "RISC-V ecosystem", "open source ISA chip"]
+    max_items: 3
+
+  wikichip:
+    name: "WikiChip Fuse"
+    tier: 2
+    ecosystem: technical
+    type: web_search
+    keywords: ["WikiChip process node", "chip microarchitecture analysis", "semiconductor technology"]
+    max_items: 3
