@@ -22,6 +22,7 @@ class EventRecord:
 
     event_id: str
     title: str
+    title_cn: str = ""  # AI-translated Chinese title
     description: str = ""
     url: str = ""
     image_url: str = ""

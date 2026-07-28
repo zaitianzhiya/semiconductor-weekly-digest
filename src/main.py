@@ -1,6 +1,7 @@
 """Orchestrator: collect → filter → score → AI → render pipeline."""
 
 import argparse
+import json
 import os
 import sys
 import yaml
@@ -126,7 +127,101 @@ def _merge_records(records: list[EventRecord]) -> list[EventRecord]:
     return list(merged.values())
 
 
-def run_weekly(config: dict):
+def _generate_cn_titles(records: list[EventRecord]) -> None:
+    """Batch-translate event titles to Chinese using LLM.
+
+    When LLM is unavailable, falls back to rule-based keyword substitution for
+    the most common semiconductor terms, so reports always have some CN content.
+    """
+    # Simple rule-based fallback for common semiconductor terms
+    TERM_MAP = {
+        "Semiconductor": "半导体", "semiconductor": "半导体",
+        "Chip": "芯片", "chip": "芯片",
+        "Foundry": "晶圆代工", "foundry": "晶圆代工",
+        "Memory": "存储", "memory": "存储",
+        "Processor": "处理器", "processor": "处理器",
+        "Manufacturing": "制造", "manufacturing": "制造",
+        "Equipment": "设备", "equipment": "设备",
+        "Packaging": "封装", "packaging": "封装",
+        "Breakthrough": "突破", "breakthrough": "突破",
+        "Market": "市场", "market": "市场",
+        "Industry": "产业", "industry": "产业",
+        "Technology": "技术", "technology": "技术",
+        "Revenue": "营收", "revenue": "营收",
+        "Investment": "投资", "investment": "投资",
+        "Supply Chain": "供应链", "Supply chain": "供应链",
+        "Data Center": "数据中心", "Data center": "数据中心",
+        "AI Chip": "AI芯片", "AI chip": "AI芯片",
+        "GPU": "图形处理器", "CPU": "中央处理器",
+        "DRAM": "内存", "NAND": "闪存", "HBM": "高带宽内存",
+        "EUV": "极紫外光刻", "DUV": "深紫外光刻",
+        "TSMC": "台积电", "Samsung": "三星",
+        "Intel": "英特尔", "NVIDIA": "英伟达", "Nvidia": "英伟达",
+        "AMD": "超威半导体", "Qualcomm": "高通",
+        "Broadcom": "博通", "ASML": "阿斯麦",
+        "SK Hynix": "SK海力士", "SK hynix": "SK海力士",
+        "Micron": "美光", "CXMT": "长鑫存储",
+        "SMIC": "中芯国际", "YMTC": "长江存储",
+        "Kospi": "韩国综合指数", "Korea": "韩国",
+        "China": "中国", "Japan": "日本",
+        "U.S.": "美国", "US": "美国",
+        "IPO": "上市", "IPO": "上市",
+        "Stock": "股票", "stock": "股票",
+        "Report": "报告", "report": "报告",
+        "Launches": "发布", "launches": "发布",
+        "Announces": "宣布", "announces": "宣布",
+    }
+
+    for r in records:
+        # Build a rough CN title from keyword substitution
+        en = r.title
+        cn = en
+        for en_term, cn_term in TERM_MAP.items():
+            cn = cn.replace(en_term, cn_term)
+        # If no changes, try small-case
+        if cn == en:
+            cn = ""
+        r.title_cn = cn
+
+    # Try LLM batch translation for top events (better quality)
+    try:
+        from src.ai.llm_client import LLMClient
+        client = LLMClient()
+    except Exception:
+        return  # ok, rule-based fallback is enough
+
+    # Batch top 30 titles for LLM translation
+    top_titles = [(r.event_id, r.title) for r in records[:30] if r.confidence_grade in ("A", "B", "C")]
+    if not top_titles:
+        return
+
+    prompt = (
+        "将以下半导体行业新闻标题翻译为简洁中文（每行一条，保持专业术语准确）：\n\n"
+        + "\n".join(f"{i+1}. {t}" for i, (_, t) in enumerate(top_titles))
+        + "\n\n请按编号返回翻译结果，格式：编号. 中文标题"
+    )
+
+    try:
+        result = client.chat(
+            "你是半导体行业专业翻译，请将英文标题翻译为简洁准确的中文。保持专业术语（EUV/DUV/DRAM/HBM/GAA等）不翻。",
+            prompt,
+            temperature=0.2,
+        )
+        # Parse result back: "1. 中文标题"
+        id_to_cn: dict[str, str] = {}
+        for line in result.strip().split("\n"):
+            line = line.strip()
+            parts = line.split(". ", 1)
+            if len(parts) == 2 and parts[0].isdigit():
+                idx = int(parts[0]) - 1
+                if 0 <= idx < len(top_titles):
+                    id_to_cn[top_titles[idx][0]] = parts[1]
+
+        for r in records:
+            if r.event_id in id_to_cn:
+                r.title_cn = id_to_cn[r.event_id]
+    except Exception as e:
+        print(f"  [CN translate] LLM batch failed: {e}, using rule-based fallback")
     """Full weekly pipeline: collect from all Tier 1 + Tier 2 sources."""
     print(f"[Weekly] Starting pipeline — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
     records: list[EventRecord] = []
@@ -179,6 +274,11 @@ def run_weekly(config: dict):
         grade_counts[g] = grade_counts.get(g, 0) + 1
     grade_str = ", ".join(f"{k}:{v}" for k, v in sorted(grade_counts.items()))
     print(f"[Weekly] Filtered+Scored: {len(new_records)} events — {grade_str}")
+
+    # Generate Chinese titles (LLM batch translation with rule-based fallback)
+    _generate_cn_titles(new_records)
+    cn_count = sum(1 for r in new_records if r.title_cn)
+    print(f"[Weekly] CN titles generated: {cn_count}/{len(new_records)}")
 
     # AI deep analysis
     deep_analysis = ""

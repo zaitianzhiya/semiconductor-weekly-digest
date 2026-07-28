@@ -13,12 +13,13 @@ class MarkdownRenderer:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def _title_link(self, r: EventRecord) -> str:
-        """Plain title or clickable link."""
-        title = r.title[:80]
-        if r.url:
-            return f"[{title}]({r.url})"
-        return title
+    def _event_title(self, r: EventRecord) -> str:
+        """Bilingual title: English (main) + Chinese subtitle via <br> if available."""
+        en = r.title[:70]
+        cn = (r.title_cn or "").strip()[:50]
+        if cn and cn != en:
+            return f"{en}<br/><small>{cn}</small>"
+        return en
 
     def _poster_img(self, r: EventRecord) -> str:
         """Poster thumbnail as Markdown image or empty."""
@@ -69,7 +70,7 @@ class MarkdownRenderer:
         for i, r in enumerate(records[:top_n], 1):
             cats = " ".join(f"`{c}`" for c in r.categories[:3]) if r.categories else "-"
             poster = self._poster_img(r)
-            title_col = r.title[:60]
+            title_col = self._event_title(r)
             link_col = f"[🔗]({r.url})" if r.url else "-"
             lines.append(
                 f"| {i} | {title_col} | {link_col} | {poster} | {r.organization} | "
@@ -90,7 +91,7 @@ class MarkdownRenderer:
             lines.append("|---|------|------|------|------|--------|")
             for i, r in enumerate(crecs, 1):
                 poster = self._poster_img(r)
-                title_col = r.title[:60]
+                title_col = self._event_title(r)
                 link_col = f"[🔗]({r.url})" if r.url else "-"
                 lines.append(
                     f"| {i} | {title_col} | {link_col} | {poster} | {r.organization} | "
