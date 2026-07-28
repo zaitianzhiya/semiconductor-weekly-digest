@@ -223,6 +223,8 @@ def _generate_cn_titles(records: list[EventRecord]) -> None:
     except Exception as e:
         print(f"  [CN translate] LLM batch failed: {e}, using rule-based fallback")
     """Full weekly pipeline: collect from all Tier 1 + Tier 2 sources."""
+def run_weekly(config: dict):
+    """Full weekly pipeline: collect from all Tier 1 + Tier 2 sources."""
     print(f"[Weekly] Starting pipeline — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
     records: list[EventRecord] = []
 
