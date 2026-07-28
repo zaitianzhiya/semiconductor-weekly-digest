@@ -128,217 +128,158 @@ def _merge_records(records: list[EventRecord]) -> list[EventRecord]:
 
 
 def _generate_cn_titles(records: list[EventRecord]) -> None:
-    """Generate Chinese titles for event records.
+    """Generate Chinese titles for ALL event records via LLM batch translation.
 
-    Strategy:
-      1. Try LLM batch translation (Gemini/DeepSeek/OpenAI) — best quality
-      2. Fall back to structured template-based translation — always works, decent quality
-         for semiconductor domain patterns.
+    Strategy: LLM translates all events in batches (20 per call).
+    Falls back to keyword pre-processing only if no LLM key is available.
     """
-    # ---- Structured template translation ----
-    # These patterns cover 80%+ of common semiconductor news title structures.
-    # Each pattern: (regex, replacement template) applied in order.
-    _PATTERNS: list[tuple[str, str]] = [
-        # Company/entity announcements
-        (r'^(.+?) Announces (.+)$', r'\1 宣布 \2'),
-        (r'^(.+?) Unveils (.+)$', r'\1 发布 \2'),
-        (r'^(.+?) Launches (.+)$', r'\1 推出 \2'),
-        (r'^(.+?) Targets (.+)$', r'\1 瞄准 \2'),
-        (r'^(.+?) Completes (.+)$', r'\1 完成 \2'),
-        (r'^(.+?) Unveiled (.+)$', r'\1 发布 \2'),
-        (r'^(.+?) Reportedly (.+)$', r'据报道：\1 \2'),
-        # Rankings / lists
-        (r'^Ranked: (.+)$', r'排名：\1'),
-        (r'^Best (.+)$', r'最佳\1'),
-        (r'^Top (\d+) (.+)$', r'TOP \1 \2'),
-        # Market / industry reports
-        (r'^(.+?) Market to Reach (.+?) by (\d{4})$', r'\1 市场规模预计到 \3 年达到 \2'),
-        (r'^(.+?) Industry Poised for (.+)$', r'\1 产业有望实现 \2'),
-        (r'^(.+?) Industry Closes in on (.+)$', r'\1 产业逼近 \2'),
-        (r'^(.+?) Market (.+)$', r'\1 市场 \2'),
-        (r'^(.+?) Soars to (.+)$', r'\1 飙升至 \2'),
-        (r'^(.+?) Surges (.+)$', r'\1 暴涨 \2'),
-        (r'^(.+?) Sees (.+)$', r'\1 预计 \2'),
-        # Stock / financial
-        (r'^(.+?) Reports (.+?) Loss(.*)$', r'\1 报告亏损 \2\3'),
-        (r'^(.+?) Bets on (.+)$', r'\1 押注 \2'),
-        (r'^(.+?) Stock (.+)$', r'\1 股票 \2'),
-        # Analysis / opinion
-        (r'^(.+?) Says (.+)$', r'\1 表示：\2'),
-        (r'^(.+?) Why (.+?)\?$', r'为什么\2？\1 分析'),
-        (r'^(.+?) Could (.+)$', r'\1 或将 \2'),
-        # Generic X → Y
-        (r'^(.+?) Shifts? (.+?) to (.+)$', r'\1 将 \2 转向 \3'),
-        (r'^(.+?) Signals? (.+)$', r'\1 释放信号：\2'),
-        (r'^(.+?) Hits? (.+)$', r'\1 达到 \2'),
-        (r'^(.+?) Drops? (.+)$', r'\1 下跌 \2'),
-        (r'^(.+?) Falls? (.+)$', r'\1 下跌 \2'),
-        (r'^(.+?) Rise?s? (.+)$', r'\1 上涨 \2'),
-        (r'^(.+?) Grows? (.+)$', r'\1 增长 \2'),
-        (r'^(.+?) Reveals (.+)$', r'\1 透露 \2'),
-        (r'^(.+?) Expands? (.+)$', r'\1 拓展 \2'),
-        (r'^(.+?) Sets? (.+)$', r'\1 设定 \2'),
-        (r'^(.+?) Joins (.+)$', r'\1 加入 \2'),
-        (r'^(.+?) Signs? (.+)$', r'\1 签署 \2'),
-        (r'^(.+?) Partners? with (.+)$', r'\1 与 \2 达成合作'),
-        (r'^(.+?) Acquires? (.+)$', r'\1 收购 \2'),
-        (r'^(.+?) Merges? with (.+)$', r'\1 与 \2 合并'),
-        # Various prepositional patterns
-        (r'^(.+?) as (.+)$', r'\1，因 \2'),
-        (r'^(.+?) amid (.+)$', r'\1，在 \2 背景下'),
-        (r'^(.+?) after (.+)$', r'\1，在 \2 之后'),
-        (r'^(.+?) ahead of (.+)$', r'\1，\2 前夕'),
-        # Weekly / daily roundups
-        (r'^(.+?) Weekly (.+)$', r'\1 周报：\2'),
-        (r'^(.+?) Roundup: (.+)$', r'\1 汇总：\2'),
-        (r'^(.+?) Update: (.+)$', r'\1 更新：\2'),
-    ]
-
-    # Company name → Chinese mapping (order matters: longer first)
-    _COMPANY_CN: list[tuple[str, str]] = [
-        ("Advanced Micro Devices", "AMD"),
-        ("Semiconductor Industry Association", "半导体行业协会(SIA)"),
-        ("Samsung Electronics", "三星电子"),
-        ("SK Hynix", "SK海力士"), ("SK hynix", "SK海力士"),
-        ("Micron Technology", "美光科技"),
-        ("Applied Materials", "应用材料"),
-        ("Lam Research", "泛林半导体"),
-        ("Qualcomm", "高通"), ("Broadcom", "博通"),
-        ("NVIDIA", "英伟达"), ("Nvidia", "英伟达"),
-        ("TSMC", "台积电"), ("Intel", "英特尔"),
-        ("AMD", "AMD"), ("ASML", "阿斯麦"),
-        ("Samsung", "三星"), ("Micron", "美光"),
-        ("Arm ", "ARM "), ("CXMT", "长鑫存储"),
-        ("SMIC", "中芯国际"), ("YMTC", "长江存储"),
-        ("Hua Hong", "华虹半导体"),
-        ("KLA", "科磊"), ("Cadence", "Cadence"),
-        ("Synopsys", "新思科技"), ("Rapidus", "Rapidus"),
-        ("Navitas Semiconductor", "纳微半导体"),
-        ("ChangXin Memory", "长鑫存储"),
-        ("Lattice", "莱迪思半导体"),
-        ("Kingston", "金士顿"),
-        ("Tesla", "特斯拉"), ("Apple", "苹果"),
-    ]
-
-    # Domain term → Chinese (standalone terms that aren't just word pieces)
-    _TERM_CN: list[tuple[str, str]] = [
-        ("Semiconductor Industry", "半导体产业"),
-        ("Semiconductor", "半导体"),
-        ("semiconductor", "半导体"),
-        ("semiconductors", "半导体"),
-        ("Chip", "芯片"), ("chip", "芯片"), ("chips", "芯片"),
-        ("Foundry", "晶圆代工"), ("foundry", "晶圆代工"),
-        ("Memory", "存储器"), ("memory", "存储器"),
-        ("Processor", "处理器"),
-        ("Equipment", "设备"),
-        ("Packaging", "封装"), ("packaging", "封装"),
-        ("Manufacturing", "制造"),
-        ("Technology", "技术"), ("technology", "技术"),
-        ("Industry", "产业"), ("Market", "市场"),
-        ("Revenue", "营收"), ("Investment", "投资"),
-        ("Supply Chain", "供应链"), ("Data Center", "数据中心"),
-        ("AI Chip", "AI芯片"), ("AI chip", "AI芯片"),
-        ("GPU", "GPU"), ("CPU", "CPU"), ("NPU", "NPU"),
-        ("HBM4", "HBM4"), ("HBM3", "HBM3"), ("HBM3e", "HBM3e"),
-        ("HBM", "HBM"), ("DRAM", "DRAM"), ("NAND", "NAND"),
-        ("EUV", "EUV光刻"), ("DUV", "DUV光刻"),
-        ("2nm", "2nm"), ("3nm", "3nm"), ("5nm", "5nm"),
-        ("CoWoS", "CoWoS先进封装"), ("Chiplet", "Chiplet"),
-        ("RISC-V", "RISC-V"), ("GAA", "GAA晶体管"),
-        ("Advanced Packaging", "先进封装"),
-        ("advanced packaging", "先进封装"),
-        ("Kospi", "韩国KOSPI指数"),
-        ("Korea", "韩国"), ("Japan", "日本"), ("China", "中国"),
-        ("U.S. ", "美国"), ("US ", "美国"),
-        ("IPO", "上市"), ("Stock", "股票"), ("stocks", "股票"),
-        ("Revenue", "营收"), ("Earnings", "盈利"),
-        ("Production", "量产"), ("production", "量产"),
-        ("Collaboration", "合作"), ("Innovation", "创新"),
-        ("Breakthrough", "突破"),
-        ("Milestone", "里程碑"), ("Bottleneck", "瓶颈"),
-        ("Billions", "数十亿"), ("Trillion", "万亿"),
-        ("Report", "报告"), ("Analysis", "分析"),
-        ("Update", "更新"), ("Outlook", "展望"),
-        ("Trends", "趋势"),
-        ("Q1 ", "第一季度"), ("Q2 ", "第二季度"),
-        ("Q3 ", "第三季度"), ("Q4 ", "第四季度"),
-        ("H1 ", "上半年"), ("H2 ", "下半年"),
-    ]
 
     import re
 
+    # ── Preprocessing: longest-match-first keyword substitution ──
+    # Sort DESCENDING by length so "Chiplet" matches before "Chip" -> "芯片let"
+    _PREPROCESS: list[tuple[str, str]] = sorted([
+        # Multi-word company names FIRST
+        ("Semiconductor Industry Association", "SIA"),
+        ("Advanced Micro Devices", "AMD"),
+        ("Samsung Electronics", "三星"),
+        ("SK Hynix", "SK海力士"), ("SK hynix", "SK海力士"),
+        ("Micron Technology", "美光"),
+        ("Applied Materials", "应用材料"),
+        ("Lam Research", "泛林"),
+        ("Navitas Semiconductor", "纳微半导体"),
+        ("ChangXin Memory Technologies", "长鑫存储"),
+        ("Western Digital", "西部数据"),
+        ("Hua Hong Semiconductor", "华虹半导体"),
+        ("Hua Hong", "华虹"),
+        ("Lattice Semiconductor", "莱迪思"),
+        # Geography
+        ("South Korea", "韩国"), ("United States", "美国"),
+        # Technical multi-word (keep as-is in CN context)
+        ("AI chip", "AI芯片"), ("AI chips", "AI芯片"),
+        ("AI Chips", "AI芯片"), ("AI Chip", "AI芯片"),
+        ("AI accelerator", "AI加速器"),
+        ("data center", "数据中心"), ("Data Center", "数据中心"),
+        ("Data centre", "数据中心"),
+        ("artificial intelligence", "AI"),
+        ("high-performance computing", "高性能计算"),
+        ("advanced packaging", "先进封装"), ("Advanced Packaging", "先进封装"),
+        ("hybrid bonding", "混合键合"), ("Hybrid Bonding", "混合键合"),
+        ("glass substrate", "玻璃基板"), ("Glass Substrate", "玻璃基板"),
+        ("3D stacking", "3D堆叠"), ("3D IC", "三维集成电路"),
+        ("silicon photonics", "硅光子"),
+        ("power semiconductor", "功率半导体"),
+        ("compound semiconductor", "化合物半导体"),
+        ("supply chain", "供应链"), ("Supply Chain", "供应链"),
+        ("mass production", "大规模量产"), ("Mass Production", "大规模量产"),
+        ("semiconductor equipment", "半导体设备"),
+        ("wafer fab", "晶圆厂"),
+        ("EU Chips Act", "欧盟芯片法案"),
+        ("CHIPS Act", "芯片法案"),
+        ("export control", "出口管制"),
+        ("entity list", "实体清单"),
+        ("RISC-V", "RISC-V"),
+        # Single-word companies
+        ("NVIDIA", "英伟达"), ("Nvidia", "英伟达"), ("Nvidia's", "英伟达"),
+        ("TSMC", "台积电"), ("Intel", "英特尔"),
+        ("ASML", "阿斯麦"), ("Qualcomm", "高通"), ("Broadcom", "博通"),
+        ("AMD", "AMD"), ("Samsung", "三星"), ("Micron", "美光"),
+        ("CXMT", "长鑫存储"), ("SMIC", "中芯国际"), ("YMTC", "长江存储"),
+        ("Tesla", "特斯拉"), ("Apple", "苹果"),
+        ("KLA", "科磊"), ("Cadence", "Cadence"), ("Synopsys", "新思科技"),
+        ("Rapidus", "Rapidus"), ("Renesas", "瑞萨"),
+        ("IBM", "IBM"), ("Google", "谷歌"), ("Microsoft", "微软"),
+        ("Amazon", "亚马逊"), ("Meta", "Meta"), ("OpenAI", "OpenAI"),
+        ("Sony", "索尼"), ("SoftBank", "软银"), ("Oracle", "甲骨文"),
+        ("Dell", "戴尔"), ("HP", "惠普"), ("Foxconn", "富士康"),
+        ("ASE", "日月光"), ("Kingston", "金士顿"),
+        ("SanDisk", "闪迪"), ("Toshiba", "东芝"),
+        ("Arm ", "Arm "), ("Lattice", "莱迪思"),
+        ("Siemens", "西门子"), ("Hitachi", "日立"),
+        ("LG", "LG"), ("SK ", "SK"),
+        # Technical terms — keep abbreviations; translate descriptive ones
+        ("semiconductors", "半导体"), ("Semiconductors", "半导体"),
+        ("semiconductor", "半导体"), ("Semiconductor", "半导体"),
+        ("foundries", "晶圆代工"), ("foundry", "晶圆代工"),
+        ("lithography", "光刻"),
+        ("chiplet", "chiplet"), ("Chiplet", "Chiplet"),
+        ("through silicon via", "硅通孔(TSV)"),
+        ("book-to-bill", "订单出货比"),
+        # Geography adjectives
+        ("Korean", "韩国"), ("Japan", "日本"), ("Japanese", "日本"),
+        ("China", "中国"), ("Chinese", "中国"),
+        ("U.S.", "美国"), ("US", "美国"),
+        ("Taiwan", "台湾"), ("Taiwanese", "台湾"),
+        ("Europe", "欧洲"), ("European", "欧洲"),
+        ("Germany", "德国"), ("India", "印度"),
+    ], key=lambda x: -len(x[0]))
+
     for r in records:
         en = r.title.strip()
-
-        # Step 1: Try structured pattern matching
-        cn = None
-        for pattern, template in _PATTERNS:
-            m = re.match(pattern, en)
-            if m:
-                cn = template
-                # Fill placeholders
-                for gi in range(1, len(m.groups()) + 1):
-                    # Apply term/company substitutions within each group
-                    group_text = m.group(gi)
-                    for term, cn_term in _COMPANY_CN:
-                        group_text = group_text.replace(term, cn_term)
-                    for term, cn_term in _TERM_CN:
-                        group_text = group_text.replace(term, cn_term)
-                    cn = cn.replace(f"\\{gi}", group_text)
-                break
-
-        # Step 2: Fallback — term substitution only
-        if cn is None:
-            cn = en
-            for term, cn_term in _COMPANY_CN:
-                cn = cn.replace(term, cn_term)
-            for term, cn_term in _TERM_CN:
-                cn = cn.replace(term, cn_term)
-
-        # Step 3: Clean up — remove none/None artifacts, collapse whitespace
-        cn = re.sub(r'\bNone\b', '', cn)
+        cn = en
+        for term, cn_term in _PREPROCESS:
+            idx = 0
+            while True:
+                idx = cn.find(term, idx)
+                if idx == -1:
+                    break
+                before_ok = idx == 0 or not cn[idx - 1].isalnum() and cn[idx - 1] != "'"
+                after_ok = (idx + len(term) == len(cn)
+                            or not cn[idx + len(term)].isalnum() and cn[idx + len(term)] != "'")
+                if before_ok and after_ok:
+                    cn = cn[:idx] + cn_term + cn[idx + len(term):]
+                    idx += len(cn_term)
+                else:
+                    idx += 1
         cn = re.sub(r'\s{2,}', ' ', cn).strip()
-
-        # Only use CN if it's actually different from EN
         r.title_cn = cn if cn != en else ""
 
-    # ---- Try LLM batch translation for top events (better quality) ----
+    # ── LLM batch translation for ALL events ──
     try:
         from src.ai.llm_client import LLMClient
         client = LLMClient()
     except Exception:
+        print("  [CN translate] No LLM key found — using keyword-only fallback")
         return
 
-    top_titles = [(r.event_id, r.title) for r in records[:30]
-                  if r.confidence_grade in ("A", "B", "C")]
-    if not top_titles:
-        return
+    BATCH_SIZE = 20
+    id_to_cn: dict[str, str] = {}
+    all_records = [r for r in records if r.title.strip()]
 
-    prompt = (
-        "请将以下半导体行业新闻标题翻译为简洁流畅的中文（一行一条，保持专业术语不翻译）：\n\n"
-        + "\n".join(f"{i+1}. {t}" for i, (_, t) in enumerate(top_titles))
-        + "\n\n请严格按编号返回，格式：1. 中文翻译"
-    )
-
-    try:
-        result = client.chat(
-            "你是半导体行业专业翻译。请将英文新闻标题翻译为流畅简洁的中文，保持专业术语(EUV/DUV/GAA/HBM/CoWoS等)不翻。",
-            prompt, temperature=0.2,
+    for batch_start in range(0, len(all_records), BATCH_SIZE):
+        batch = all_records[batch_start:batch_start + BATCH_SIZE]
+        lines = [f"{j+1}. {r.title}" for j, r in enumerate(batch)]
+        prompt = (
+            "Translate these semiconductor news headlines into concise, fluent Chinese.\n"
+            "Rules: keep technical acronyms (EUV/DUV/GAA/HBM/CoWoS/GPU/CPU/DRAM/NAND) as-is.\n"
+            "Return exactly one line per number, format: N. 中文翻译\n\n"
+            + "\n".join(lines)
         )
-        id_to_cn: dict[str, str] = {}
-        for line in result.strip().split("\n"):
-            line = line.strip()
-            parts = line.split(". ", 1)
-            if len(parts) == 2 and parts[0].isdigit():
-                idx = int(parts[0]) - 1
-                if 0 <= idx < len(top_titles):
-                    id_to_cn[top_titles[idx][0]] = parts[1].strip()
 
-        for r in records:
-            if r.event_id in id_to_cn and id_to_cn[r.event_id]:
-                r.title_cn = id_to_cn[r.event_id]
-    except Exception as e:
-        print(f"  [CN translate] LLM batch failed: {e}, using template fallback")
+        try:
+            result = client.chat(
+                "You are a semiconductor industry translator. Translate English news headlines "
+                "into fluent, concise Chinese. Preserve technical acronyms. Output format: "
+                "N. Chinese translation — one numbered line per headline, no extra text.",
+                prompt, temperature=0.1,
+            )
+            for line in result.strip().split("\n"):
+                line = line.strip()
+                parts = line.split(". ", 1)
+                if len(parts) == 2 and parts[0].isdigit():
+                    idx = int(parts[0]) - 1
+                    if 0 <= idx < len(batch):
+                        id_to_cn[batch[idx].event_id] = parts[1].strip()
+        except Exception as e:
+            print(f"  [CN translate] Batch {batch_start // BATCH_SIZE + 1} failed: {e}")
+            continue
+
+    for r in records:
+        if r.event_id in id_to_cn and id_to_cn[r.event_id]:
+            r.title_cn = id_to_cn[r.event_id]
+
+    print(f"  [CN translate] LLM translated {len(id_to_cn)}/{len(all_records)} titles")
+
 def run_weekly(config: dict):
     """Full weekly pipeline: collect from all Tier 1 + Tier 2 sources."""
     print(f"[Weekly] Starting pipeline — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC")
