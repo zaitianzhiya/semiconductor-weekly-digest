@@ -1,6 +1,7 @@
 """Orchestrator: collect → filter → score → AI → render pipeline."""
 
 import argparse
+import re
 import json
 import os
 import sys
@@ -100,14 +101,29 @@ SEMI_CATEGORY_KEYWORDS: dict[str, list[str]] = {
 
 
 def _auto_categorize(record: EventRecord, config: dict) -> list[str]:
-    """Semiconductor-domain keyword classification."""
-    text = f"{record.title} {record.description}".lower()
+    """Auto-classify based on title keyword matching (word-boundary for ASCII, substring for CJK)."""
+    text = (record.title or "").lower()
+    category_mapping = config.get("category_mapping", {})
     matched: list[str] = []
-    for cat_id, keywords in SEMI_CATEGORY_KEYWORDS.items():
-        if any(kw.lower() in text for kw in keywords):
-            matched.append(cat_id)
-    return matched[:3]  # max 3 categories per event
+    for cat_id, keywords in category_mapping.items():
+        for kw in keywords:
+            if _kw_match((kw or "").lower(), text):
+                cat_name = cat_id
+                for cc in config.get("categories", []):
+                    if cc.get("id") == cat_id:
+                        cat_name = cc.get("name", cat_id)
+                        break
+                matched.append(cat_name)
+                break
+    return matched
 
+
+def _kw_match(kw: str, text: str) -> bool:
+    if not kw:
+        return False
+    if any("\u4e00" <= ch <= "\u9fff" for ch in kw):
+        return kw in text
+    return re.search(rf"(?<![a-z0-9]){re.escape(kw)}(?![a-z0-9])", text) is not None
 
 def _merge_records(records: list[EventRecord]) -> list[EventRecord]:
     """Merge records with same event_id, combining citation chains."""
@@ -131,108 +147,22 @@ def _generate_cn_titles(records: list[EventRecord]) -> None:
     """Generate Chinese titles for ALL event records via LLM batch translation.
 
     Strategy: LLM translates all events in batches (20 per call).
-    Falls back to keyword pre-processing only if no LLM key is available.
+    Skipped entirely when no LLM key is configured (keyword substitution
+    produced mixed-language garbage).
     """
+    try:
+        from src.ai.llm_client import LLMClient
+        _llm_client = LLMClient()
+    except Exception:
+        _llm_client = None
+    if _llm_client is None:
+        # No LLM key configured — leave titles untranslated instead of
+        # emitting mixed-language keyword substitutions.
+        print("[CN translate] No LLM key — skipping Chinese title generation")
+        return
+
 
     import re
-
-    # ── Preprocessing: longest-match-first keyword substitution ──
-    # Sort DESCENDING by length so "Chiplet" matches before "Chip" -> "芯片let"
-    _PREPROCESS: list[tuple[str, str]] = sorted([
-        # Multi-word company names FIRST
-        ("Semiconductor Industry Association", "SIA"),
-        ("Advanced Micro Devices", "AMD"),
-        ("Samsung Electronics", "三星"),
-        ("SK Hynix", "SK海力士"), ("SK hynix", "SK海力士"),
-        ("Micron Technology", "美光"),
-        ("Applied Materials", "应用材料"),
-        ("Lam Research", "泛林"),
-        ("Navitas Semiconductor", "纳微半导体"),
-        ("ChangXin Memory Technologies", "长鑫存储"),
-        ("Western Digital", "西部数据"),
-        ("Hua Hong Semiconductor", "华虹半导体"),
-        ("Hua Hong", "华虹"),
-        ("Lattice Semiconductor", "莱迪思"),
-        # Geography
-        ("South Korea", "韩国"), ("United States", "美国"),
-        # Technical multi-word (keep as-is in CN context)
-        ("AI chip", "AI芯片"), ("AI chips", "AI芯片"),
-        ("AI Chips", "AI芯片"), ("AI Chip", "AI芯片"),
-        ("AI accelerator", "AI加速器"),
-        ("data center", "数据中心"), ("Data Center", "数据中心"),
-        ("Data centre", "数据中心"),
-        ("artificial intelligence", "AI"),
-        ("high-performance computing", "高性能计算"),
-        ("advanced packaging", "先进封装"), ("Advanced Packaging", "先进封装"),
-        ("hybrid bonding", "混合键合"), ("Hybrid Bonding", "混合键合"),
-        ("glass substrate", "玻璃基板"), ("Glass Substrate", "玻璃基板"),
-        ("3D stacking", "3D堆叠"), ("3D IC", "三维集成电路"),
-        ("silicon photonics", "硅光子"),
-        ("power semiconductor", "功率半导体"),
-        ("compound semiconductor", "化合物半导体"),
-        ("supply chain", "供应链"), ("Supply Chain", "供应链"),
-        ("mass production", "大规模量产"), ("Mass Production", "大规模量产"),
-        ("semiconductor equipment", "半导体设备"),
-        ("wafer fab", "晶圆厂"),
-        ("EU Chips Act", "欧盟芯片法案"),
-        ("CHIPS Act", "芯片法案"),
-        ("export control", "出口管制"),
-        ("entity list", "实体清单"),
-        ("RISC-V", "RISC-V"),
-        # Single-word companies
-        ("NVIDIA", "英伟达"), ("Nvidia", "英伟达"), ("Nvidia's", "英伟达"),
-        ("TSMC", "台积电"), ("Intel", "英特尔"),
-        ("ASML", "阿斯麦"), ("Qualcomm", "高通"), ("Broadcom", "博通"),
-        ("AMD", "AMD"), ("Samsung", "三星"), ("Micron", "美光"),
-        ("CXMT", "长鑫存储"), ("SMIC", "中芯国际"), ("YMTC", "长江存储"),
-        ("Tesla", "特斯拉"), ("Apple", "苹果"),
-        ("KLA", "科磊"), ("Cadence", "Cadence"), ("Synopsys", "新思科技"),
-        ("Rapidus", "Rapidus"), ("Renesas", "瑞萨"),
-        ("IBM", "IBM"), ("Google", "谷歌"), ("Microsoft", "微软"),
-        ("Amazon", "亚马逊"), ("Meta", "Meta"), ("OpenAI", "OpenAI"),
-        ("Sony", "索尼"), ("SoftBank", "软银"), ("Oracle", "甲骨文"),
-        ("Dell", "戴尔"), ("HP", "惠普"), ("Foxconn", "富士康"),
-        ("ASE", "日月光"), ("Kingston", "金士顿"),
-        ("SanDisk", "闪迪"), ("Toshiba", "东芝"),
-        ("Arm ", "Arm "), ("Lattice", "莱迪思"),
-        ("Siemens", "西门子"), ("Hitachi", "日立"),
-        ("LG", "LG"), ("SK ", "SK"),
-        # Technical terms — keep abbreviations; translate descriptive ones
-        ("semiconductors", "半导体"), ("Semiconductors", "半导体"),
-        ("semiconductor", "半导体"), ("Semiconductor", "半导体"),
-        ("foundries", "晶圆代工"), ("foundry", "晶圆代工"),
-        ("lithography", "光刻"),
-        ("chiplet", "chiplet"), ("Chiplet", "Chiplet"),
-        ("through silicon via", "硅通孔(TSV)"),
-        ("book-to-bill", "订单出货比"),
-        # Geography adjectives
-        ("Korean", "韩国"), ("Japan", "日本"), ("Japanese", "日本"),
-        ("China", "中国"), ("Chinese", "中国"),
-        ("U.S.", "美国"), ("US", "美国"),
-        ("Taiwan", "台湾"), ("Taiwanese", "台湾"),
-        ("Europe", "欧洲"), ("European", "欧洲"),
-        ("Germany", "德国"), ("India", "印度"),
-    ], key=lambda x: -len(x[0]))
-
-    for r in records:
-        en = r.title.strip()
-        cn = en
-        for term, cn_term in _PREPROCESS:
-            idx = 0
-            while True:
-                idx = cn.find(term, idx)
-                if idx == -1:
-                    break
-                before_ok = idx == 0 or not cn[idx - 1].isalnum() and cn[idx - 1] != "'"
-                after_ok = (idx + len(term) == len(cn)
-                            or not cn[idx + len(term)].isalnum() and cn[idx + len(term)] != "'")
-                if before_ok and after_ok:
-                    cn = cn[:idx] + cn_term + cn[idx + len(term):]
-                    idx += len(cn_term)
-                else:
-                    idx += 1
-        cn = re.sub(r'\s{2,}', ' ', cn).strip()
-        r.title_cn = cn if cn != en else ""
 
     # ── LLM batch translation for ALL events ──
     try:
@@ -321,19 +251,22 @@ def run_weekly(config: dict):
     merged = _merge_records(records)
     print(f"[Weekly] Merged: {len(merged)} unique events (from {len(records)} raw)")
 
-    dedup = Deduplicator(str(ROOT / "data" / "state.json"))
-    new_records, seen = dedup.deduplicate(merged)
+    qf = QualityFilter(config)
+    filtered, qstats = qf.filter(merged)
+    print(f"[Weekly] Quality filter: {qstats}")
+    if not filtered:
+        print("[Weekly] No records passed quality filter.")
+        return
+
+    dedup = Deduplicator(str(ROOT / "data" / "dedup_state.json"))
+    new_records, seen = dedup.deduplicate(filtered)
     print(f"[Weekly] Dedup: {len(new_records)} new / {seen} already seen")
 
     if not new_records:
         print("[Weekly] All events already seen this cycle.")
         return
 
-    # Filter + score
-    qf = QualityFilter(config)
     scorer = Scorer(config)
-
-    new_records = qf.filter(new_records)
     new_records = scorer.score(new_records)
     new_records.sort(key=lambda r: r.confidence_score, reverse=True)
 
@@ -364,15 +297,19 @@ def run_weekly(config: dict):
         print(f"[Weekly] AI skipped (will render data-only report): {e}")
 
     # Render
-    renderer = MarkdownRenderer(str(ROOT / "output"))
+    category_order = [c.get("name") for c in config.get("categories", [])]
+    renderer = MarkdownRenderer(str(ROOT / "output"), category_order=category_order)
     stats = {
         "本周采集": len(records),
-        "去重后": len(new_records),
+        "历史已见": seen,
+        "质量过滤排除": sum(qstats.values()) - qstats["kept"] - qstats["fallback_excluded"],
+        "占位骨架排除": qstats["fallback_excluded"],
         "新事件": len(new_records),
         "可信度分布": grade_str,
         "独立生态覆盖": _eco_coverage(new_records),
     }
     renderer.render_weekly_report(new_records, deep_analysis=deep_analysis, stats=stats)
+    dedup.save()
 
     print(f"[Weekly] ✅ Done — report written to output/")
     print(f"[Weekly] Top event: {new_records[0].title[:80] if new_records else 'N/A'}")

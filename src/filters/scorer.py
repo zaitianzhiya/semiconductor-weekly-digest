@@ -16,9 +16,10 @@ class Scorer:
         self.tier_1_weight = scoring_cfg.get("tier_1_weight", 40)
         self.tier_2_weight = scoring_cfg.get("tier_2_weight", 25)
         self.max_score = scoring_cfg.get("max_score", 100)
-        self.min_a = scoring_cfg.get("min_score_for_A", 80)
-        self.min_b = scoring_cfg.get("min_score_for_B", 60)
-        self.min_c = scoring_cfg.get("min_score_for_C", 30)
+        grades = scoring_cfg.get("grades", {})
+        self.min_a = scoring_cfg.get("min_score_for_A", grades.get("A", 80))
+        self.min_b = scoring_cfg.get("min_score_for_B", grades.get("B", 60))
+        self.min_c = scoring_cfg.get("min_score_for_C", grades.get("C", 30))
         self.ecosystem_weights = config.get("ecosystem_weights", {})
 
     def score(self, records: list[EventRecord]) -> list[EventRecord]:
@@ -58,8 +59,8 @@ class Scorer:
     def _assign_grade(self, score: float) -> str:
         if score >= self.min_a:
             return "A"
-        elif score >= self.min_b:
+        if score >= self.min_b:
             return "B"
-        elif score >= self.min_c:
+        if score >= self.min_c:
             return "C"
         return "D"
