@@ -112,7 +112,7 @@
     },
     "evt:d0226632e827": {
       "first_seen_week": "2026-W40",
-      "last_seen_week": "2026-W40",
+      "last_seen_week": "2026-W42",
       "title": "My Voice Zoo"
     },
     "evt:28d86e71c9e6": {
@@ -277,7 +277,7 @@
     },
     "evt:98e43d37ef3c": {
       "first_seen_week": "2026-W41",
-      "last_seen_week": "2026-W41",
+      "last_seen_week": "2026-W42",
       "title": "Listen All Day, Any Day, Anytime, Anywhere on VOA1 The Hits."
     },
     "evt:cdc047f148f1": {
@@ -299,6 +299,191 @@
       "first_seen_week": "2026-W41",
       "last_seen_week": "2026-W41",
       "title": "AMAT Stock Has Doubled This Year: Analyst Trims Price Target But Sees Higher..."
+    },
+    "evt:681ca42c4ba1": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "The Era of 300mm SiC Wafers — Looking at the 'Next Use Case' for Power Semiconductor Materials Through Resonac's Development Success and U.S. Funding for Wolfspeed"
+    },
+    "evt:5c8e46394cc6": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Global semiconductor market heads for $2 trillion"
+    },
+    "evt:dff6f332022b": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Global Semiconductor Sales Hit $1T Milestone in August"
+    },
+    "evt:3e5686b710cc": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Conviction amid complexity"
+    },
+    "evt:69495f0c4af9": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "3rd Week of October | Will Direction Be Set by TSMC/CPI? | Monday, October 12, 2026 (Holiday) - Friday, October 16 | Weekly Market Weather Forecast"
+    },
+    "evt:dba17e423204": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "AI gold rush transforms trans-Pacific trade and logistics"
+    },
+    "evt:485993ce2bfe": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "News des 10./11. Oktober 2026"
+    },
+    "evt:343e7c517e33": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "SCHG Vs. GARP: Ride Memory Now, Own The Hyperscalers Later"
+    },
+    "evt:3a96a979a10f": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Samsung and SK Hynix respond to HBM4E heat dissipation, AI intermediary layer may expand to 40 times"
+    },
+    "evt:e63dedba4784": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "List of Semiconductor Stocks in India"
+    },
+    "evt:46d0cd024f57": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "India roundup: AI data center buildout accelerates as semiconductor push continues to broaden"
+    },
+    "evt:dfc58f7f7aab": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "AI racks approach megawatt power levels as SiC, GaN, silicon divide power delivery roles"
+    },
+    "evt:8755189eb6ce": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "South Korean startup Helios targets Taiwan supply chains and Taiwan Strait risk analysis"
+    },
+    "evt:77c291f00a2f": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "From AI Market to 'Memory Bubble'—The Trap of 'Ultra-Low PER' Lurking Behind the Frenzy, and Identifying the Next Champion"
+    },
+    "evt:4e656de5ae56": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Korean stocks down 3.65%, what about Japanese stock futures? Checking the charts on a holiday for tonight and tomorrow | October 12"
+    },
+    "evt:60cdb81af9c8": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Samsung to invest $9.15B in chips, focusing on Vietnam & S Korea"
+    },
+    "evt:359d5a1b90d9": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Samsung SDS buys Woojung Air to bolster global air freight"
+    },
+    "evt:371c0e64d278": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Samsung plans $9.15 bn semiconductor investment, with nearly $6 bn earmarked for Vietnam"
+    },
+    "evt:7b0beb41a516": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Strip out AI stocks, and the US market lags Europe"
+    },
+    "evt:f87a562939ea": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Intel CEO Says DeepSeek, Kimi, GLM Are 'Good Enough' – Reportedly Backs Open Source For Efficiency Gains"
+    },
+    "evt:0fb95653c983": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "154亿美元撤离!AI狂欢下韩国存储双雄为何严重跑输"
+    },
+    "evt:103fbe2177ce": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "中国科学院院士毛军发：从晶体管微缩到互连微缩的范式转移"
+    },
+    "evt:26fe5b8223ae": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "助力捕捉国产芯片设计核心龙头，科创芯片设计ETF华泰柏瑞10月12日起发售"
+    },
+    "evt:20443100841f": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "创业板跌超2%，工业富联跌7%，文化传媒逆势拉升，贵州茅台重夺“股王”宝座，30年期国债升至逾一年高位"
+    },
+    "evt:5ea4e945f9a0": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "县委第一巡察组召开县农业农村局党组巡察 “回头看”工作动员会"
+    },
+    "evt:8a9556efd8e0": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "落实全国先进制造业大会精神，第二十六届中国国际工业博览会今日开幕"
+    },
+    "evt:9fa8dc724bfb": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "走过27载的工博会，如何与上海产业深度绑定？"
+    },
+    "evt:23d7a4c1a438": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "台塑布局半导体，拟扩大美国制造，依托美国德州地理优势，支持客户扩产"
+    },
+    "evt:5742d0cdb601": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "固态硬盘价格1年涨至约4倍"
+    },
+    "evt:9cd6740d6809": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Tech News Today: Modi Opens CG Semi Plant, 1Komma5Grad Valued at USD 1.35B, Singapore Warns on AI Hiring, Amazon Eyes Decart"
+    },
+    "evt:be47ccc250f2": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "[Fujimi Incorporated] Focus on the 'Abrasives' Supporting the Growth of AI Semiconductors! Let's Prepare Related Stocks in Advance!"
+    },
+    "evt:0612b12e3200": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "[US Stock News Analysis: Week of 10/5] Long-term interest rates at 24-year high, crude oil fluctuates in the Strait of Hormuz, semiconductors down 4% on AI doubts | Summarizing ..."
+    },
+    "evt:c26dcb3c2db7": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Mapping US chip supply chain: China accounts for far more than it appears, report says"
+    },
+    "evt:94a79cd31e86": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Chips: Wie werden sie in ihrer Entwicklung blockiert? Die neueste offizielle Einschätzung der USA zu den Entwicklungsblockaden von Halbleitern"
+    },
+    "evt:737aab7ff389": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Startup Funding: Q3 2026"
+    },
+    "evt:f9e1a6f02c73": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "Marvell Technology Targets Up to $90B Revenue by 2031 as AI Demand Accelerates"
+    },
+    "evt:a9fab3dbaf4c": {
+      "first_seen_week": "2026-W42",
+      "last_seen_week": "2026-W42",
+      "title": "2027 manufacturing conferences and trade shows"
     }
   }
 }
